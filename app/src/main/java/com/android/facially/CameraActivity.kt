@@ -15,9 +15,7 @@ import android.view.SurfaceHolder
 import android.view.SurfaceView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.camera.core.CameraSelector
-import androidx.camera.core.Preview
-import androidx.camera.core.SurfaceRequest
+import androidx.camera.core.*
 import androidx.camera.core.SurfaceRequest.Result.RESULT_SURFACE_USED_SUCCESSFULLY
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
@@ -86,6 +84,7 @@ abstract class CameraActivity : AppCompatActivity() {
             }
         }
     }
+
     private val displayManager by lazy {
         getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
     }
@@ -96,6 +95,7 @@ abstract class CameraActivity : AppCompatActivity() {
             calRotation()
         }
     }
+
     override fun onDestroy() {
         super.onDestroy()
         displayManager.unregisterDisplayListener(displayListener)
@@ -138,6 +138,7 @@ abstract class CameraActivity : AppCompatActivity() {
 
     open fun onSurfaceCreated() {}
     open fun onSurfaceDestroy() {}
+    open fun onAnalysis(proxy: ImageProxy) {}
     abstract fun onDraw(oes: Int, width: Int, height: Int)
 
     private fun createCameraSurface() {
@@ -172,12 +173,18 @@ abstract class CameraActivity : AppCompatActivity() {
             addListener({
                 val provider = get()
                 val preview = Preview.Builder()
-                    .setTargetResolution(Size(720,1280))
+                    .setTargetResolution(Size(720, 1280))
                     .build()
+                val analysis = ImageAnalysis.Builder()
+                    .setTargetResolution(Size(720, 1280))
+                    .build()
+                analysis.setAnalyzer(cameraExecutor, {
+                    onAnalysis(it)
+                })
                 provider.bindToLifecycle(
                     this@CameraActivity,
                     CameraSelector.DEFAULT_FRONT_CAMERA,
-                    preview
+                    preview, analysis
                 )
                 preview.setSurfaceProvider {
                     cameraWidth = it.resolution.width

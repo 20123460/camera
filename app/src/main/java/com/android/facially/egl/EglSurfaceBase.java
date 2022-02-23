@@ -183,6 +183,6 @@ public class EglSurfaceBase {
         } finally {
             if (bos != null) bos.close();
         }
-        Log.d(TAG, "Saved " + width + "x" + height + " frame as '" + filename + "'");
+        Log.d(TAG, "Saved " + width + "ver_x" + height + " frame as '" + filename + "'");
     }
 }
