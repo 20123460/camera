@@ -1,14 +1,14 @@
-package com.android.facially
+package com.android.facially.activity
 
 import android.Manifest
 import android.content.Context
-import android.content.pm.ActivityInfo
 import android.graphics.SurfaceTexture
 import android.hardware.display.DisplayManager
 import android.opengl.GLES20.*
 import android.os.Bundle
 import android.os.Handler
 import android.os.HandlerThread
+import android.util.Log
 import android.util.Size
 import android.view.Surface
 import android.view.SurfaceHolder
@@ -19,10 +19,19 @@ import androidx.camera.core.*
 import androidx.camera.core.SurfaceRequest.Result.RESULT_SURFACE_USED_SUCCESSFULLY
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
+import com.alibaba.android.mnnkit.actor.FaceDetector
+import com.alibaba.android.mnnkit.entity.FaceDetectConfig
+import com.alibaba.android.mnnkit.entity.MNNCVImageFormat
+import com.alibaba.android.mnnkit.entity.MNNFlipType
+import com.alibaba.android.mnnkit.intf.InstanceCreatedListener
 import com.android.facially.egl.EglCore
 import com.android.facially.egl.EglCore.FLAG_TRY_GLES3
 import com.android.facially.egl.WindowSurface
+import com.android.facially.toast
+import java.lang.Error
 import java.util.concurrent.FutureTask
+import com.android.facially.R
+import com.android.facially.TAG
 
 private fun Handler.sync(runnable: Runnable) {
     val future = FutureTask { runnable.run() }
@@ -30,12 +39,11 @@ private fun Handler.sync(runnable: Runnable) {
     future.get()
 }
 
-
 abstract class CameraActivity : AppCompatActivity() {
 
-    protected val surfaceView: SurfaceView by lazy { findViewById(R.id.surface_view) }
-    protected var surfaceWidth = 0
-    protected var surfaceHeight = 0
+    private val surfaceView: SurfaceView by lazy { findViewById(R.id.surface_view) }
+    private var surfaceWidth = 0
+    private var surfaceHeight = 0
 
     // camera
     private val cameraExecutor by lazy { ContextCompat.getMainExecutor(this) }
@@ -43,10 +51,9 @@ abstract class CameraActivity : AppCompatActivity() {
     private var cameraSurface: Surface? = null
     private val cameraTextures = IntArray(1)
 
-    protected val cameraMatrix = FloatArray(16)
-    protected var cameraWidth = 0
-    protected var cameraHeight = 0
-    protected var cameraRotation = 0
+    private var cameraWidth = 0
+    private var cameraHeight = 0
+    private var cameraRotation = 0
 
     private val cameraThread = HandlerThread("CameraThread").apply { start() }
     private var cameraHandler = Handler(cameraThread.looper)
@@ -54,6 +61,15 @@ abstract class CameraActivity : AppCompatActivity() {
     private var egl: EglCore? = null
     private var eglSurface: WindowSurface? = null
 
+    //face
+    protected val landmarks = FloatArray(212)
+    protected var roll = 0f // 旋转
+    protected var pitch = 0f // 点头
+    protected var yaw = 0f//  摇头
+
+    // protected
+    protected val cameraMatrix = FloatArray(16)
+    private var displayRotation = 0
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     // permission
@@ -70,7 +86,6 @@ abstract class CameraActivity : AppCompatActivity() {
     ////////////////////////////////////////////////////////////////////////////////////////////////
     // display rotation
 
-    protected var displayRotation = 0
     private fun calRotation() {
         window.decorView.post {
             window.decorView.let { view ->
@@ -102,9 +117,24 @@ abstract class CameraActivity : AppCompatActivity() {
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
+    private var mFaceDetector: FaceDetector? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_camera)
+        val createConfig = FaceDetector.FaceDetectorCreateConfig()
+        createConfig.mode = FaceDetector.FaceDetectMode.MOBILE_DETECT_MODE_VIDEO
+        FaceDetector.createInstanceAsync(
+            this,
+            createConfig,
+            object : InstanceCreatedListener<FaceDetector> {
+                override fun onSucceeded(faceDetector: FaceDetector) {
+                    mFaceDetector = faceDetector
+                }
+
+                override fun onFailed(i: Int, error: Error) {
+                    Log.e(TAG, "create face detetector failed: $error")
+                }
+            })
         displayManager.registerDisplayListener(displayListener, Handler(mainLooper))
         calRotation()
         surfaceView.holder.addCallback(object : SurfaceHolder.Callback {
@@ -135,11 +165,20 @@ abstract class CameraActivity : AppCompatActivity() {
             }
         })
     }
+    ////////////////////////////////////////////////////////////////////////////////////////////////
 
     open fun onSurfaceCreated() {}
     open fun onSurfaceDestroy() {}
-    open fun onAnalysis(proxy: ImageProxy) {}
-    abstract fun onDraw(oes: Int, width: Int, height: Int)
+    abstract fun onDraw(
+        oes: Int,
+        rotation: Int,
+        displayRotation: Int,
+        width: Int,
+        height: Int,
+        surfaceWidth: Int,
+        surfaceHeight: Int
+    )
+    ////////////////////////////////////////////////////////////////////////////////////////////////
 
     private fun createCameraSurface() {
         cameraHandler.sync {
@@ -150,7 +189,15 @@ abstract class CameraActivity : AppCompatActivity() {
                 if (surfaceView.isAttachedToWindow) {
                     it.updateTexImage()
                     it.getTransformMatrix(cameraMatrix)
-                    onDraw(cameraTextures[0], cameraWidth, cameraHeight)
+                    onDraw(
+                        cameraTextures[0],
+                        cameraRotation,
+                        displayRotation,
+                        cameraWidth,
+                        cameraHeight,
+                        surfaceWidth,
+                        surfaceHeight
+                    )
                     eglSurface?.swapBuffers()
                 }
             }, cameraHandler)
@@ -204,5 +251,42 @@ abstract class CameraActivity : AppCompatActivity() {
                 }
             }, cameraExecutor)
         }
+    }
+
+    private var bytes: ByteArray? = null
+    private fun onAnalysis(proxy: ImageProxy) {
+        val width = proxy.width
+        val height = proxy.height
+        if (bytes == null || bytes?.size != width * height) {
+            bytes = ByteArray(width * height)
+        }
+        proxy.planes[0].buffer.get(bytes!!)
+        val detectConfig =
+            FaceDetectConfig.ACTIONTYPE_HEAD_YAW or FaceDetectConfig.ACTIONTYPE_HEAD_PITCH
+        val report = mFaceDetector?.inference(
+            bytes,
+            width,
+            height,
+            MNNCVImageFormat.GRAY,
+            detectConfig,
+            cameraRotation,
+            cameraRotation,
+            MNNFlipType.FLIP_NONE
+        )
+        Log.e(TAG, "onAnalysis: -- ${report?.size ?: 0}")
+        if (!report.isNullOrEmpty()) {
+            val face = report[0]
+            System.arraycopy(face.keyPoints, 0, landmarks, 0, 212)
+            yaw = face.yaw
+            pitch = face.pitch
+            roll = face.roll
+            for (i in 0 until 106) {
+                landmarks[i * 2] /= width + 0f
+                landmarks[i * 2 + 1] /= height + 0f
+            }
+        } else {
+            for (i in 0 until 212) landmarks[i] = 0f
+        }
+        proxy.close()
     }
 }

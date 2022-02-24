@@ -21,11 +21,28 @@ struct Vertex {
 };
 struct Mesh {
     std::vector<Vertex> vertexes;
-    std::vector<unsigned int> indices;
+    std::vector<int> indices;
     std::vector<std::string> textures;
     bool valid = true;
+
+    float max_x = 0;
+    float max_y = 0;
+    float max_z = 0;
+    float min_x = 0;
+    float min_y = 0;
+    float min_z = 0;
 };
 
+
+Vertex &max_min(Mesh &mesh, Vertex &vertex) {
+    mesh.max_x = mesh.max_x > vertex.ver_x ? mesh.max_x : vertex.ver_x;
+    mesh.max_y = mesh.max_y > vertex.ver_y ? mesh.max_y : vertex.ver_y;
+    mesh.max_z = mesh.max_z > vertex.ver_z ? mesh.max_z : vertex.ver_z;
+    mesh.min_x = mesh.min_x < vertex.ver_x ? mesh.min_x : vertex.ver_x;
+    mesh.min_y = mesh.min_y < vertex.ver_y ? mesh.min_y : vertex.ver_y;
+    mesh.min_z = mesh.min_z < vertex.ver_z ? mesh.min_z : vertex.ver_z;
+    return vertex;
+}
 
 void
 with_material(const aiMaterial *material, aiTextureType type, std::vector<std::string> &textures) {
@@ -46,6 +63,7 @@ with_material(const aiMaterial *material, aiTextureType type, std::vector<std::s
 }
 
 Mesh with_mesh(const aiMesh *mesh, const aiScene *scene) {
+    Mesh result;
     std::vector<Vertex> vertexes;
     for (int i = 0; i < mesh->mNumVertices; ++i) {
         Vertex vertex{};
@@ -59,9 +77,9 @@ Mesh with_mesh(const aiMesh *mesh, const aiScene *scene) {
             vertex.tex_y = mesh->mTextureCoords[0]->y;
         }
         //法线向量
-        vertexes.push_back(vertex);
+        vertexes.push_back(max_min(result, vertex));
     }
-    std::vector<unsigned int> indices;
+    std::vector<int> indices;
     // index
     for (int i = 0; i < mesh->mNumFaces; ++i) {
         aiFace face = mesh->mFaces[i];
@@ -70,7 +88,7 @@ Mesh with_mesh(const aiMesh *mesh, const aiScene *scene) {
             continue;
         }
         for (int j = 0; j < face.mNumIndices; ++j) {
-            indices.push_back(face.mIndices[i]);
+            indices.push_back(face.mIndices[j]);
         }
     }
     std::vector<std::string> textures;
@@ -80,7 +98,10 @@ Mesh with_mesh(const aiMesh *mesh, const aiScene *scene) {
         with_material(material, aiTextureType_DIFFUSE, textures);
         with_material(material, aiTextureType_AMBIENT, textures);
     }
-    return {vertexes, indices, textures};
+    result.vertexes = vertexes;
+    result.indices = indices;
+    result.textures = textures;
+    return result;
 }
 
 std::vector<Mesh> with_node(const aiNode *node, const aiScene *scene) {
@@ -102,9 +123,9 @@ std::vector<Mesh> with_node(const aiNode *node, const aiScene *scene) {
 
 
 extern "C"
-JNIEXPORT void JNICALL
-Java_com_android_facially_FbxActivity_loadFbx(JNIEnv *env, jobject thiz, jstring path,
-                                              jobject assert) {
+JNIEXPORT jobject JNICALL
+Java_com_android_facially_activity_FbxActivity_loadFbx(JNIEnv *env, jobject thiz, jstring path,
+                                                       jobject assert) {
     auto *importer = new Assimp::Importer();
     auto manager = AAssetManager_fromJava(env, assert);
     // 未释放
@@ -121,4 +142,17 @@ Java_com_android_facially_FbxActivity_loadFbx(JNIEnv *env, jobject thiz, jstring
     if (scene->HasTextures()) {
         __android_log_print(ANDROID_LOG_ERROR, TAG, "-------------");
     }
+    // demo only one
+    Mesh one = meshes[0];
+    jfloatArray vertexes = env->NewFloatArray(one.vertexes.size() * 5);
+    env->SetFloatArrayRegion(vertexes, 0, one.vertexes.size() * 5,
+                             reinterpret_cast<const jfloat *>(one.vertexes.data()));
+    jintArray indices = env->NewIntArray(one.indices.size());
+    env->SetIntArrayRegion(indices, 0, one.indices.size(), one.indices.data());
+
+    jstring texPath = env->NewStringUTF(one.textures[0].data());
+
+    jclass cla = env->FindClass("com/android/facially/activity/Mesh");
+    jmethodID method = env->GetMethodID(cla, "<init>", "([F[ILjava/lang/String;)V");
+    return env->NewObject(cla, method, vertexes, indices, texPath);
 }

@@ -1,5 +1,7 @@
 <resources>
-    <string name="app_name">app</string>
+    <string name="app_name">facially</string>
+    <string name="preview">preview</string>
     <string name="landmark">landmark</string>
+    <string name="landmarkf">landmark with framebuffer</string>
     <string name="fbx">fbx</string>
 </resources>
