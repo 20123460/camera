@@ -15,7 +15,7 @@ class GLProgram constructor(vert: GLShader, frag: GLShader) {
         glAttachShader(program, frag.shader)
         glLinkProgram(program)
         GLES20.glGetProgramiv(program, GL_LINK_STATUS, status, 0)
-        if (status[0] < 0) {
+        if (status[0] == 0) {
             Log.e(TAG, "error: ${glGetProgramInfoLog(program)}")
             release()
         }

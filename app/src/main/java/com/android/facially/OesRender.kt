@@ -33,6 +33,7 @@ class OesRender constructor(context: Context) {
 
     private var locTexMatrix = 0
     private var locMvpMatrix = 0
+    private val identityMatrix = FloatArray(16)
 
     init {
         locTexMatrix = program.getUniformLocation("texTransform")
@@ -40,6 +41,7 @@ class OesRender constructor(context: Context) {
         program.use()
         val loc = program.getUniformLocation("input_texture")
         GLES31.glUniform1i(loc, 0)
+        Matrix.setIdentityM(identityMatrix,0)
     }
 
     fun onDestroy() {
@@ -87,9 +89,8 @@ class OesRender constructor(context: Context) {
             calculateMvp(rotation, width, height, surfaceWidth, surfaceHeight, cameraMatrix)
             GLES31.glUniformMatrix4fv(locMvpMatrix, 1, false, cameraMatrix, 0)
         } else {
-            Matrix.setIdentityM(cameraMatrix, 0)
-            GLES31.glUniformMatrix4fv(locTexMatrix, 1, false, cameraMatrix, 0)
-            GLES31.glUniformMatrix4fv(locMvpMatrix, 1, false, cameraMatrix, 0)
+            GLES31.glUniformMatrix4fv(locTexMatrix, 1, false, identityMatrix, 0)
+            GLES31.glUniformMatrix4fv(locMvpMatrix, 1, false, identityMatrix, 0)
         }
 
         vao.bind()

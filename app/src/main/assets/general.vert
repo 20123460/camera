@@ -14,4 +14,5 @@ void main() {
     frag_coord = (texTransform * in_coord).xy;
 //        gl_Position = in_position;
 //        frag_coord = in_coord.xy;
+    gl_PointSize = 10.0;
 }

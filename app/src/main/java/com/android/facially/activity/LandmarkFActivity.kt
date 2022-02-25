@@ -7,6 +7,7 @@ import android.opengl.GLES31
 import android.opengl.Matrix
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.util.Log
 import com.android.facially.*
 import com.android.facially.opengl.GLFramebuffer
 import com.android.facially.opengl.GLProgram
@@ -28,7 +29,15 @@ class LandmarkFActivity : PreviewActivity() {
         )
     }
     private val landmarkProgram by lazy { GLProgram(vertex, fragment) }
+
+//    private val vertexes = floatArrayOf(
+//        -1f, -1f,  // Lower-left
+//        1f, -1f,    // Lower-right
+//        -1f, 1f,  // Upper-left
+//        1f, 1f    // Upper-right
+//    )
     private val vao by lazy { GLVao(landmarks) }
+//    private val vao by lazy { GLVao(vertexes) }
 
     private var locTexMatrix = 0
     private var locMvpMatrix = 0
@@ -42,8 +51,8 @@ class LandmarkFActivity : PreviewActivity() {
 
     override fun onSurfaceCreated() {
         super.onSurfaceCreated()
-        locTexMatrix = landmarkProgram.getUniformLocation("texTransform")
-        locMvpMatrix = landmarkProgram.getUniformLocation("mvpTransform")
+//        locTexMatrix = landmarkProgram.getUniformLocation("texTransform")
+//        locMvpMatrix = landmarkProgram.getUniformLocation("mvpTransform")
     }
 
     private val landmarkMatrix = FloatArray(16)
@@ -72,17 +81,25 @@ class LandmarkFActivity : PreviewActivity() {
         vao.update(landmarks)
         landmarkProgram.use()
 
-        GLES30.glViewport(0, 0, surfaceWidth, surfaceHeight)
+        GLES30.glViewport(0, 0, width, height)
 
-        Matrix.setIdentityM(cameraMatrix, 0)
-        GLES31.glUniformMatrix4fv(locTexMatrix, 1, false, cameraMatrix, 0)
-        GLES31.glUniformMatrix4fv(locMvpMatrix, 1, false, cameraMatrix, 0)
+//        Matrix.setIdentityM(cameraMatrix, 0)
+//        GLES31.glUniformMatrix4fv(locTexMatrix, 1, false, cameraMatrix, 0)
+//        GLES31.glUniformMatrix4fv(locMvpMatrix, 1, false, cameraMatrix, 0)
 
         vao.bind()
         GLES30.glDrawArrays(GLES30.GL_POINTS, 0, 106)
+//        GLES30.glDrawArrays(GLES30.GL_POINTS, 0, 2)
+//        GLES31.glDrawArrays(GLES31.GL_TRIANGLE_STRIP, 0, 100)
         vao.unbind()
 
+//        test(width,height)
         framebuffer?.unbind()
+
+        val err = GLES30.glGetError()
+        if (err != GLES30.GL_NO_ERROR) {
+            Log.e(TAG, "onDraw: -------------- $err")
+        }
 
         rgbaRender?.onDraw(
             framebuffer!!.texture,

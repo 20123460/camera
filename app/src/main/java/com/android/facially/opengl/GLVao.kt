@@ -3,6 +3,8 @@ package com.android.facially.opengl
 import android.opengl.GLES20
 import android.opengl.GLES20.*
 import android.opengl.GLES30.*
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import java.nio.FloatBuffer
 
 class GLVao constructor(vertexes: FloatArray) {
@@ -12,11 +14,14 @@ class GLVao constructor(vertexes: FloatArray) {
     var vao = 0
 
     init {
+        //FloatBuffer.wrap(vertexes)
         glGenBuffers(1, temp, 0).apply { buffer = temp[0] }
         glBindBuffer(GL_ARRAY_BUFFER, buffer)
         glBufferData(
             GL_ARRAY_BUFFER,
             vertexes.size * 4,
+//            ByteBuffer.allocateDirect(vertexes.size * 4).order(ByteOrder.nativeOrder())
+//                .asFloatBuffer().put(vertexes),
             FloatBuffer.wrap(vertexes),
             GL_DYNAMIC_DRAW
         )

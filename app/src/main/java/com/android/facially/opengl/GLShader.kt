@@ -14,7 +14,7 @@ class GLShader constructor(type: Int, shaderSource: String) {
         glShaderSource(shader, shaderSource)
         glCompileShader(shader)
         glGetShaderiv(shader, GL_COMPILE_STATUS, status, 0)
-        if (status[0] < 0) {
+        if (status[0] == 0) {
             Log.e(TAG, "error:" + glGetShaderInfoLog(shader))
             glDeleteShader(shader)
         }

@@ -142,8 +142,17 @@ Java_com_android_facially_activity_FbxActivity_loadFbx(JNIEnv *env, jobject thiz
     if (scene->HasTextures()) {
         __android_log_print(ANDROID_LOG_ERROR, TAG, "-------------");
     }
+
     // demo only one
     Mesh one = meshes[0];
+    float max_x = abs(one.max_x) > abs(one.min_x) ? abs(one.max_x) : abs(one.min_x);
+    float max_y = abs(one.max_y) > abs(one.min_y) ? abs(one.max_y) : abs(one.min_y);
+    float max_z = abs(one.max_z) > abs(one.min_z) ? abs(one.max_z) : abs(one.min_z);
+    for (auto & vertexe : one.vertexes) {
+        vertexe.ver_x /= max_x;
+        vertexe.ver_y /= max_y;
+        vertexe.ver_z /= max_z;
+    }
     jfloatArray vertexes = env->NewFloatArray(one.vertexes.size() * 5);
     env->SetFloatArrayRegion(vertexes, 0, one.vertexes.size() * 5,
                              reinterpret_cast<const jfloat *>(one.vertexes.data()));
