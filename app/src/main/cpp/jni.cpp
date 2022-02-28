@@ -73,8 +73,8 @@ Mesh with_mesh(const aiMesh *mesh, const aiScene *scene) {
         vertex.ver_y = mVertex.y;
         vertex.ver_z = mVertex.z;
         if (mesh->HasTextureCoords(0)) {
-            vertex.tex_x = mesh->mTextureCoords[0]->x;
-            vertex.tex_y = mesh->mTextureCoords[0]->y;
+            vertex.tex_x = mesh->mTextureCoords[0][i].x;
+            vertex.tex_y = mesh->mTextureCoords[0][i].y;
         }
         //法线向量
         vertexes.push_back(max_min(result, vertex));
@@ -148,20 +148,33 @@ Java_com_android_facially_activity_FbxActivity_loadFbx(JNIEnv *env, jobject thiz
     float max_x = abs(one.max_x) > abs(one.min_x) ? abs(one.max_x) : abs(one.min_x);
     float max_y = abs(one.max_y) > abs(one.min_y) ? abs(one.max_y) : abs(one.min_y);
     float max_z = abs(one.max_z) > abs(one.min_z) ? abs(one.max_z) : abs(one.min_z);
-    for (auto & vertexe : one.vertexes) {
+    for (auto &vertexe : one.vertexes) {
         vertexe.ver_x /= max_x;
         vertexe.ver_y /= max_y;
         vertexe.ver_z /= max_z;
     }
+    // vertex
     jfloatArray vertexes = env->NewFloatArray(one.vertexes.size() * 5);
     env->SetFloatArrayRegion(vertexes, 0, one.vertexes.size() * 5,
                              reinterpret_cast<const jfloat *>(one.vertexes.data()));
+    // indices
     jintArray indices = env->NewIntArray(one.indices.size());
     env->SetIntArrayRegion(indices, 0, one.indices.size(), one.indices.data());
 
+    // path
     jstring texPath = env->NewStringUTF(one.textures[0].data());
 
+    // center
+    jfloatArray pos = env->NewFloatArray(3);
+    float center[3];
+    center[0] = (one.min_x + one.max_x) / 2 / max_x;
+    center[1] = (one.min_y + one.max_y) / 2 / max_y;
+    center[2] = (one.min_z + one.max_z) / 2 / max_z;
+    env->SetFloatArrayRegion(pos, 0, 3 , center);
+
+    // return
     jclass cla = env->FindClass("com/android/facially/activity/Mesh");
-    jmethodID method = env->GetMethodID(cla, "<init>", "([F[ILjava/lang/String;)V");
-    return env->NewObject(cla, method, vertexes, indices, texPath);
+    jmethodID method = env->GetMethodID(cla, "<init>", "([F[ILjava/lang/String;[F)V");
+
+    return env->NewObject(cla, method, vertexes, indices, texPath, pos);
 }

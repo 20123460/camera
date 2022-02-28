@@ -5,25 +5,16 @@ import android.content.Intent
 import android.content.res.AssetManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.opengl.GLES11Ext
-import android.opengl.GLES20
-import android.opengl.GLES30
+import android.graphics.RectF
+import android.opengl.*
 import android.opengl.GLES30.*
-import android.opengl.GLES31
 import android.os.Bundle
 import android.util.Log
-import com.android.facially.OesRender
-import com.android.facially.RGBARender
-import com.android.facially.TAG
+import com.android.facially.*
 import com.android.facially.opengl.*
-import com.android.facially.readAssert
 import java.nio.ByteBuffer
 import kotlin.concurrent.thread
 
-
-class Mesh constructor(val vertexes: FloatArray, val indices: IntArray, val path: String) {
-
-}
 
 class FbxActivity : PreviewActivity() {
 
@@ -46,10 +37,18 @@ class FbxActivity : PreviewActivity() {
     private var texture = 0
 
     private val landmarkMatrix = FloatArray(16)
+    private val maskMatrix = FloatArray(16)
 
     private var imageData: ByteBuffer? = null
     private var imageWidth = 0
     private var imageHeight = 0
+
+
+    private val temp = FloatArray(32)
+    private val result = FloatArray(32)
+    private val modelMatrix = FloatArray(16)
+    private val previewSize = RectF()
+    private val previewCropSize = RectF()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -72,7 +71,7 @@ class FbxActivity : PreviewActivity() {
     override fun onSurfaceCreated() {
         super.onSurfaceCreated()
 
-        glEnable(GL_DEPTH_TEST)
+
 
         locTexMatrix = program.getUniformLocation("texTransform")
         locMvpMatrix = program.getUniformLocation("mvpTransform")
@@ -96,7 +95,7 @@ class FbxActivity : PreviewActivity() {
         surfaceHeight: Int
     ) {
         System.arraycopy(cameraMatrix, 0, landmarkMatrix, 0, 16)
-
+        glEnable(GL_DEPTH_TEST)
 
         if (rgbaRender == null) {
             rgbaRender = RGBARender(this)
@@ -111,7 +110,6 @@ class FbxActivity : PreviewActivity() {
         oesRender?.onDraw(oes, 0, 0, cameraMatrix, width, height, width, height, false)
 //        test(width, height)
 
-
         // draw mask
         if (mesh != null && imageData != null) {
 
@@ -120,80 +118,77 @@ class FbxActivity : PreviewActivity() {
                 GLES20.glGenTextures(1, temp, 0)
                 texture = temp[0]
                 glBindTexture(GL_TEXTURE_2D, texture)
-                glTexImage2D(
-                    GL_TEXTURE_2D, 0, GL_RGBA8, imageWidth, imageHeight, 0, GL_RGBA,
-                    GL_UNSIGNED_BYTE, imageData
-                )
-//                glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, imageWidth, imageHeight)
-//                glTexSubImage2D(
-//                    GL_TEXTURE_2D,
-//                    0,
-//                    0,
-//                    0,
-//                    imageWidth,
-//                    imageHeight,
-//                    GL_RGBA,
-//                    GL_UNSIGNED_BYTE,
-//                    imageData
-//                )
-
-                // todo test
-                GLES20.glGenFramebuffers(1, temp, 0)
-                val testbuffer = temp[0]
-                glBindFramebuffer(GL_FRAMEBUFFER, testbuffer)
-                glFramebufferTexture2D(
-                    GL_FRAMEBUFFER,
-                    GL_COLOR_ATTACHMENT0,
+                glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, imageWidth, imageHeight)
+                imageData?.position(0)
+                glTexSubImage2D(
                     GL_TEXTURE_2D,
-                    texture,
-                    0
+                    0,
+                    0,
+                    0,
+                    imageWidth,
+                    imageHeight,
+                    GL_RGBA,
+                    GL_UNSIGNED_BYTE,
+                    imageData
                 )
-                val status = glCheckFramebufferStatus(GL_FRAMEBUFFER)
-                if (status != GL_FRAMEBUFFER_COMPLETE) {
-                    Log.e(TAG, "test: -------- glCheckFramebufferStatus")
-                }
-                glDrawBuffers(1, intArrayOf(GL_COLOR_ATTACHMENT0), 0)
-                val buffer = ByteBuffer.allocateDirect(imageWidth * imageHeight * 4);
-                buffer.position(0)
-                glReadPixels(0, 0, imageWidth, imageHeight, GL_RGBA, GL_UNSIGNED_BYTE, buffer)
-                buffer.position(0)
-                val bitmap = Bitmap.createBitmap(imageWidth, imageHeight, Bitmap.Config.ARGB_8888)
-                bitmap.copyPixelsFromBuffer(buffer)
-                Log.e(TAG, "test: -------- check bitmap")
             }
+
             if (vao == null) {
-                val vertexes = floatArrayOf(
-                    1.0f, 1.0f, 0.0f, 1.0f, 1.0f,
-                    1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
-                    -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
-                    -1.0f, 1.0f, 0.0f, 0.0f, 1.0f
-                )
-                val indices = intArrayOf(
-                    0, 1, 2,
-                    1, 2, 3
-                )
                 vao = GL3DVao(mesh!!.vertexes, mesh!!.indices)
-//                vao = GL3DVao(vertexes, indices)
             }
 
             program.use()
             glViewport(0, 0, width, height)
 
-            glActiveTexture(GL_TEXTURE0)
             glBindTexture(GL_TEXTURE_2D, texture)
+            glActiveTexture(GL_TEXTURE0)
+
+            Matrix.setIdentityM(temp, 0)
+            Matrix.setIdentityM(temp, 16)
+//            Matrix.rotateM(temp, 0, 180f, 0f, 1f, 0f)
+            Matrix.rotateM(temp, 0, 270f, 1f, 0f, 0f)
+//            Matrix.translateM(temp, 0, -mesh!!.pos[0], -mesh!!.pos[1], -mesh!!.pos[2])
+
+            Matrix.setLookAtM(temp, 16, 0f, 0f, 2f, 0f, 0f, 0f, 0f, 1f, 0f)
+
+            Matrix.setIdentityM(result, 16)
+            Matrix.multiplyMM(result, 0, temp, 16, temp, 0)
+            Matrix.frustumM(
+                temp,
+                0,
+                -1f,
+                1f,
+                -1f,
+                1f,
+                1f,
+                3f
+            )
+//            Matrix.frustumM(
+//                temp,
+//                0,
+//                -width / height.toFloat(),
+//                width / height.toFloat(),
+//                -1f,
+//                1f,
+//                1f,
+//                3f
+//            )
+
+//            Matrix.perspectiveM(maskMatrix,0,90f,width/height.toFloat(),1f,50f)
+//            Matrix.perspectiveM(temp,16,90f,width/height.toFloat(),0f,1f)
+            Matrix.multiplyMM(maskMatrix, 0, temp, 0, result, 0)
+            GLES20.glUniformMatrix4fv(locMvpMatrix, 1, false, maskMatrix, 0)
+//            GLES20.glUniformMatrix4fv(locMvpMatrix, 1, false, modelMatrix, 0)
 
             vao?.bind()
             glDrawElements(GL_TRIANGLES, mesh!!.indices.size, GL_UNSIGNED_INT, 0)
-//            glDrawArrays(GL_POINTS, 0, mesh!!.vertexes.size)
-//            glDrawArrays(GL_POINTS, 0, 4)
             vao?.unbind()
 
             val err = GLES30.glGetError()
             if (err != GLES30.GL_NO_ERROR) {
                 Log.e(TAG, "FbxActivity onDraw: -------------- $err")
             }
-
-//            test(width, height)
+            test(width, height)
         }
 
         framebuffer?.unbind()
