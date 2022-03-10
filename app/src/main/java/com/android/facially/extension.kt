@@ -1,6 +1,8 @@
 package com.android.facially
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.widget.Toast
 
 const val TAG = "facially"
@@ -18,6 +20,12 @@ fun Context.readAssert(path: String): String {
     return String(bytes)
 }
 
+fun Context.readAssertImage(path: String): Bitmap {
+    val stream = assets.open(path)
+    val bitmap = BitmapFactory.decodeStream(stream)
+    stream.close()
+    return bitmap
+}
 //                // todo test
 //                GLES20.glGenFramebuffers(1, temp, 0)
 //                val testbuffer = temp[0]

@@ -12,6 +12,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Facially">
         <activity
+            android:name=".color.FaceActivity"
+            android:exported="false" />
+        <activity
             android:name=".activity.LandmarkFActivity"
             android:exported="false" />
         <activity
