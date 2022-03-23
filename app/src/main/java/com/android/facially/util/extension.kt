@@ -1,4 +1,4 @@
-package com.android.facially
+package com.android.facially.util
 
 import android.content.Context
 import android.graphics.Bitmap

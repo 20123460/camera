@@ -3,7 +3,7 @@ package com.android.facially.opengl
 import android.opengl.GLES20
 import android.opengl.GLES30.*
 import android.util.Log
-import com.android.facially.TAG
+import com.android.facially.util.TAG
 
 class GLProgram constructor(vert: GLShader, frag: GLShader) {
     private val program = glCreateProgram()

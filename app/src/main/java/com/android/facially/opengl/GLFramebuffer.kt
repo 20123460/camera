@@ -2,9 +2,6 @@ package com.android.facially.opengl
 
 import android.opengl.GLES20
 import android.opengl.GLES30.*
-import android.opengl.GLES31
-import android.util.Log
-import com.android.facially.TAG
 
 class GLFramebuffer constructor(width: Int, height: Int) {
     var framebuffer = 0

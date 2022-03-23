@@ -1,4 +1,4 @@
-package com.android.facially
+package com.android.facially.render
 
 import android.content.Context
 import android.opengl.GLES30
@@ -7,16 +7,21 @@ import android.opengl.Matrix
 import com.android.facially.opengl.GLProgram
 import com.android.facially.opengl.GLShader
 import com.android.facially.opengl.GLVao
+import com.android.facially.util.calculateMvp
+import com.android.facially.util.readAssert
 
 class RGBARender constructor(context: Context) {
 
     private val vertex by lazy {
         GLShader(GLES31.GL_VERTEX_SHADER, context.readAssert("rgba.vert"))
     }
+    private val vertexScreen by lazy {
+        GLShader(GLES31.GL_VERTEX_SHADER, context.readAssert("rgba_screen.vert"))
+    }
     private val fragment by lazy {
         GLShader(GLES31.GL_FRAGMENT_SHADER, context.readAssert("rgba.frag"))
     }
-    private val program by lazy { GLProgram(vertex, fragment) }
+    private var program: GLProgram? = null
     private val vertexes = floatArrayOf(
         -1.0f, -1.0f,  // Lower-left
         1.0f, -1.0f,    // Lower-right
@@ -27,21 +32,21 @@ class RGBARender constructor(context: Context) {
 
     private var locTexMatrix = 0
     private var locMvpMatrix = 0
-    val matrix = FloatArray(16)
+    private val mLocalMatrix = FloatArray(16)
 
 
-    init {
-        locTexMatrix = program.getUniformLocation("texTransform")
-        locMvpMatrix = program.getUniformLocation("mvpTransform")
-        program.use()
-        val loc = program.getUniformLocation("input_texture")
+    private fun init() {
+        locTexMatrix = program!!.getUniformLocation("texTransform")
+        locMvpMatrix = program!!.getUniformLocation("mvpTransform")
+        program!!.use()
+        val loc = program!!.getUniformLocation("input_texture")
         GLES31.glUniform1i(loc, 0)
     }
 
     fun onDestroy() {
         vertex.release()
         fragment.release()
-        program.release()
+        program?.release()
         vao.release()
     }
 
@@ -56,9 +61,18 @@ class RGBARender constructor(context: Context) {
         surfaceHeight: Int,
         screen: Boolean
     ) {
-        program.use()
+        if (program == null) {
+//            program = if (screen) {
+//                GLProgram(vertexScreen, fragment)
+//            } else {
+//                GLProgram(vertex, fragment)
+//            }
+            program = GLProgram(vertex, fragment)
+            init()
+        }
+        program?.use()
         GLES31.glViewport(0, 0, surfaceWidth, surfaceHeight)
-        GLES31.glClearColor(0.0f, 0.0f, 0.0f, 1.0f)
+        GLES31.glClearColor(1.0f, 0.0f, 0.0f, 1.0f)
         GLES31.glClear(GLES31.GL_COLOR_BUFFER_BIT)
         GLES31.glActiveTexture(GLES31.GL_TEXTURE0)
         GLES31.glBindTexture(GLES30.GL_TEXTURE_2D, id)
@@ -76,16 +90,16 @@ class RGBARender constructor(context: Context) {
                     Matrix.translateM(cameraMatrix, 0, 1f, 0f, 0f)
                 }
             }
-            Matrix.rotateM(cameraMatrix, 0, -displayRotation + 0f, 0f, 0f, 1f)
+//            Matrix.rotateM(cameraMatrix, 0, -displayRotation + 0f, 0f, 0f, 1f)
             GLES31.glUniformMatrix4fv(locTexMatrix, 1, false, cameraMatrix, 0)
 
             // mvp
-            calculateMvp(rotation, width, height, surfaceWidth, surfaceHeight, cameraMatrix)
-            GLES31.glUniformMatrix4fv(locMvpMatrix, 1, false, cameraMatrix, 0)
+            calculateMvp(rotation, width, height, surfaceWidth, surfaceHeight, mLocalMatrix)
+            GLES31.glUniformMatrix4fv(locMvpMatrix, 1, false, mLocalMatrix, 0)
         } else {
-            Matrix.setIdentityM(matrix, 0)
-            GLES31.glUniformMatrix4fv(locTexMatrix, 1, false, matrix, 0)
-            GLES31.glUniformMatrix4fv(locMvpMatrix, 1, false, matrix, 0)
+            Matrix.setIdentityM(mLocalMatrix, 0)
+            GLES31.glUniformMatrix4fv(locTexMatrix, 1, false, mLocalMatrix, 0)
+            GLES31.glUniformMatrix4fv(locMvpMatrix, 1, false, mLocalMatrix, 0)
         }
 
         vao.bind()

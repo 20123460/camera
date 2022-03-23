@@ -1,10 +1,8 @@
 package com.android.facially.opengl
 
-import android.content.Context
-import android.opengl.GLES20.*
 import android.opengl.GLES30.*
 import android.util.Log
-import com.android.facially.TAG
+import com.android.facially.util.TAG
 
 class GLShader constructor(type: Int, shaderSource: String) {
     val shader = glCreateShader(type)

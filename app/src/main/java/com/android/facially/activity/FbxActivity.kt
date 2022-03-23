@@ -3,15 +3,17 @@ package com.android.facially.activity
 import android.content.Context
 import android.content.Intent
 import android.content.res.AssetManager
-import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.RectF
 import android.opengl.*
 import android.opengl.GLES30.*
 import android.os.Bundle
 import android.util.Log
-import com.android.facially.*
 import com.android.facially.opengl.*
+import com.android.facially.render.OesRender
+import com.android.facially.render.RGBARender
+import com.android.facially.util.TAG
+import com.android.facially.util.readAssert
 import java.nio.ByteBuffer
 import kotlin.concurrent.thread
 
@@ -107,7 +109,7 @@ class FbxActivity : PreviewActivity() {
 
         if (oesRender == null)
             oesRender = OesRender(this)
-        oesRender?.onDraw(oes, 0, 0, cameraMatrix, width, height, width, height, false)
+        oesRender?.onDraw(oes, 0, 0, mIdentityMatrix, width, height, width, height, false)
 //        test(width, height)
 
         // draw mask

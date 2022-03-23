@@ -5,6 +5,7 @@ import android.content.Context
 import android.graphics.SurfaceTexture
 import android.hardware.display.DisplayManager
 import android.opengl.GLES20.*
+import android.opengl.Matrix
 import android.os.Bundle
 import android.os.Handler
 import android.os.HandlerThread
@@ -27,11 +28,11 @@ import com.alibaba.android.mnnkit.intf.InstanceCreatedListener
 import com.android.facially.egl.EglCore
 import com.android.facially.egl.EglCore.FLAG_TRY_GLES3
 import com.android.facially.egl.WindowSurface
-import com.android.facially.toast
+import com.android.facially.util.toast
 import java.lang.Error
 import java.util.concurrent.FutureTask
 import com.android.facially.R
-import com.android.facially.TAG
+import com.android.facially.util.TAG
 
 private fun Handler.sync(runnable: Runnable) {
     val future = FutureTask { runnable.run() }
@@ -69,6 +70,7 @@ abstract class CameraActivity : AppCompatActivity() {
 
     // protected
     protected val cameraMatrix = FloatArray(16)
+    protected val mIdentityMatrix = FloatArray(16)
     private var displayRotation = 0
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -121,6 +123,7 @@ abstract class CameraActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_camera)
+        Matrix.setIdentityM(mIdentityMatrix, 0)
         val createConfig = FaceDetector.FaceDetectorCreateConfig()
         createConfig.mode = FaceDetector.FaceDetectMode.MOBILE_DETECT_MODE_VIDEO
         FaceDetector.createInstanceAsync(

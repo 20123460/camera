@@ -3,7 +3,7 @@
 //
 // Created by 20123460 on 2022/3/10.
 //
-#include <facedetectcnn.h>
+#include "../../../libs/libfacedetection/include/facedetection/facedetectcnn.h"
 #include <android/log.h>
 
 typedef struct {
@@ -25,7 +25,7 @@ Java_com_android_facially_color_FaceActivity_detect(JNIEnv *env, jobject thiz, j
     auto start = std::chrono::system_clock::now();
     int *pResults = facedetect_cnn(buffer,reinterpret_cast<unsigned char *>(data), width, height,width*3);
     auto end = std::chrono::system_clock::now();
-    long time = (end-start).count()/1000/1000;
+    long time = (end-start).count()/1000;
 
     for (int i = 0; i < (pResults ? *pResults : 0); i++) {
         f_box box;

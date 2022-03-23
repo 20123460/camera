@@ -3,16 +3,15 @@ package com.android.facially.activity
 import android.content.Context
 import android.content.Intent
 import android.opengl.GLES30
-import android.opengl.GLES31
-import android.opengl.Matrix
-import androidx.appcompat.app.AppCompatActivity
-import android.os.Bundle
 import android.util.Log
-import com.android.facially.*
 import com.android.facially.opengl.GLFramebuffer
 import com.android.facially.opengl.GLProgram
 import com.android.facially.opengl.GLShader
 import com.android.facially.opengl.GLVao
+import com.android.facially.render.OesRender
+import com.android.facially.render.RGBARender
+import com.android.facially.util.TAG
+import com.android.facially.util.readAssert
 
 class LandmarkFActivity : PreviewActivity() {
     companion object {
@@ -76,7 +75,7 @@ class LandmarkFActivity : PreviewActivity() {
             rgbaRender = RGBARender(this)
         }
         framebuffer?.bind()
-        oesRender?.onDraw(oes, 0, 0, cameraMatrix, width, height, width, height, false)
+        oesRender?.onDraw(oes, 0, 0, mIdentityMatrix, width, height, width, height, false)
 
         vao.update(landmarks)
         landmarkProgram.use()

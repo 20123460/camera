@@ -12,6 +12,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Facially">
         <activity
+            android:name=".DaeActivity"
+            android:exported="false" />
+        <activity
             android:name=".color.FaceActivity"
             android:exported="false" />
         <activity

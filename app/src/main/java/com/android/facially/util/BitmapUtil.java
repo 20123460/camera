@@ -1,4 +1,4 @@
-package com.android.facially;
+package com.android.facially.util;
 
 import android.graphics.Bitmap;
 

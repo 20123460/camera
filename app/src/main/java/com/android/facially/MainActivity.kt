@@ -16,6 +16,7 @@ class MainActivity : AppCompatActivity() {
     private val tvPreview: TextView by lazy { findViewById(R.id.tv_preview) }
     private val tvFbx: TextView by lazy { findViewById(R.id.tv_fbx) }
     private val tvFace: TextView by lazy { findViewById(R.id.tv_face) }
+    private val tvDae: TextView by lazy { findViewById(R.id.tv_dae) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -26,5 +27,6 @@ class MainActivity : AppCompatActivity() {
         tvLandmark.setOnClickListener { LandmarkActivity.launch(this) }
         tvLandmarkF.setOnClickListener { LandmarkFActivity.launch(this) }
         tvFbx.setOnClickListener { FbxActivity.launch(this) }
+        tvDae.setOnClickListener { DaeActivity.launch(this) }
     }
 }

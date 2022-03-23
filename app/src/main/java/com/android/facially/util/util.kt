@@ -1,4 +1,4 @@
-package com.android.facially
+package com.android.facially.util
 
 import android.graphics.RectF
 import android.opengl.Matrix
@@ -54,7 +54,9 @@ fun calculateMvp(
         -previewCropSize.width() / 2f,
         previewCropSize.width() / 2f,
         -previewCropSize.height() / 2f,
-        previewCropSize.height() / 2f, 0f, 1f
+        previewCropSize.height() / 2f,
+        0f, 1f
     )
     Matrix.multiplyMM(returnMatrix, 0, result, 16, result, 0)
 }
+

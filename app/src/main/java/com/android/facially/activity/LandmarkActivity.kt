@@ -2,16 +2,15 @@ package com.android.facially.activity
 
 import android.content.Context
 import android.content.Intent
-import android.opengl.GLES11Ext
 import android.opengl.GLES30.*
 import android.opengl.GLES31
 import android.opengl.Matrix
-import com.android.facially.OesRender
-import com.android.facially.calculateMvp
+import com.android.facially.render.OesRender
+import com.android.facially.util.calculateMvp
 import com.android.facially.opengl.GLProgram
 import com.android.facially.opengl.GLShader
 import com.android.facially.opengl.GLVao
-import com.android.facially.readAssert
+import com.android.facially.util.readAssert
 
 
 open class LandmarkActivity : PreviewActivity() {
