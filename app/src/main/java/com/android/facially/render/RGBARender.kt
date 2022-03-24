@@ -10,6 +10,14 @@ import com.android.facially.opengl.GLVao
 import com.android.facially.util.calculateMvp
 import com.android.facially.util.readAssert
 
+
+val flipVertical = floatArrayOf(
+    1.0f, 0.0f, 0.0f, 0.0f,
+    0.0f, -1.0f, 0.0f, 0.0f,
+    0.0f, 0.0f, 1.0f, 0.0f,
+    0.0f, 1.0f, 0.0f, 1.0f
+)
+
 class RGBARender constructor(context: Context) {
 
     private val vertex by lazy {
@@ -32,7 +40,8 @@ class RGBARender constructor(context: Context) {
 
     private var locTexMatrix = 0
     private var locMvpMatrix = 0
-    private val mLocalMatrix = FloatArray(16)
+
+    private val mLocalMatrix = FloatArray(32)
 
 
     private fun init() {
@@ -62,11 +71,6 @@ class RGBARender constructor(context: Context) {
         screen: Boolean
     ) {
         if (program == null) {
-//            program = if (screen) {
-//                GLProgram(vertexScreen, fragment)
-//            } else {
-//                GLProgram(vertex, fragment)
-//            }
             program = GLProgram(vertex, fragment)
             init()
         }
@@ -78,6 +82,7 @@ class RGBARender constructor(context: Context) {
         GLES31.glBindTexture(GLES30.GL_TEXTURE_2D, id)
 
         if (screen) {
+            System.arraycopy(cameraMatrix, 0, mLocalMatrix, 0, 16)
             // tex matrix
             when (displayRotation) {
                 90 -> {
@@ -90,11 +95,13 @@ class RGBARender constructor(context: Context) {
                     Matrix.translateM(cameraMatrix, 0, 1f, 0f, 0f)
                 }
             }
-//            Matrix.rotateM(cameraMatrix, 0, -displayRotation + 0f, 0f, 0f, 1f)
-            GLES31.glUniformMatrix4fv(locTexMatrix, 1, false, cameraMatrix, 0)
+            Matrix.rotateM(mLocalMatrix, 0, -displayRotation + 0f, 0f, 0f, 1f)
+            GLES31.glUniformMatrix4fv(locTexMatrix, 1, false, mLocalMatrix, 0)
 
             // mvp
             calculateMvp(rotation, width, height, surfaceWidth, surfaceHeight, mLocalMatrix)
+            Matrix.multiplyMM(mLocalMatrix,16,flipVertical,0, mLocalMatrix,0)
+
             GLES31.glUniformMatrix4fv(locMvpMatrix, 1, false, mLocalMatrix, 0)
         } else {
             Matrix.setIdentityM(mLocalMatrix, 0)

@@ -55,6 +55,9 @@ fun calculateMvp(
         previewCropSize.width() / 2f,
         -previewCropSize.height() / 2f,
         previewCropSize.height() / 2f,
+        // 由于设备归一化坐标系是左手系
+//        previewCropSize.height() / 2f,
+//        -previewCropSize.height() / 2f,
         0f, 1f
     )
     Matrix.multiplyMM(returnMatrix, 0, result, 16, result, 0)

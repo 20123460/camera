@@ -19,15 +19,12 @@ class DaeActivity : PreviewActivity() {
         }
     }
 
+
     private val mCameraMatrix = FloatArray(16)
 
     private var rgbaRender: RGBARender? = null
 
-    override fun onSurfaceCreated() {
-        super.onSurfaceCreated()
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
-    }
+    val mDaeCore by lazy { DaeCore() }
 
     override fun onDraw(
         oes: Int,
@@ -54,8 +51,12 @@ class DaeActivity : PreviewActivity() {
         }
         framebuffer?.bind()
         oesRender?.onDraw(oes, rotation, 0, mCameraMatrix, width, height, uvWidth, uvHeight, false)
-        test(uvWidth,uvHeight)
+//        test(uvWidth,uvHeight)
         framebuffer?.unbind()
+
+
+
+
 
         rgbaRender?.onDraw(
             framebuffer!!.texture,

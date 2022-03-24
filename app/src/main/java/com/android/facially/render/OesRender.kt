@@ -70,7 +70,8 @@ class OesRender constructor(context: Context) {
         screen: Boolean
     ) {
         if (program == null) {
-            program = GLProgram(if (screen) vertexScreen else vertex, fragment)
+//            program = GLProgram(if (screen) vertexScreen else vertex, fragment)
+            program = GLProgram( vertex, fragment)
             init()
         }
         program?.use()
@@ -81,6 +82,7 @@ class OesRender constructor(context: Context) {
         GLES31.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, id)
 
         if (screen) {
+            System.arraycopy(cameraMatrix,0,tempMatrix,0,16)
             // tex matrix
             when (displayRotation) {
                 90 -> {
@@ -93,12 +95,11 @@ class OesRender constructor(context: Context) {
                     Matrix.translateM(cameraMatrix, 0, 1f, 0f, 0f)
                 }
             }
-            Matrix.rotateM(cameraMatrix, 0, -displayRotation + 0f, 0f, 0f, 1f)
-            GLES31.glUniformMatrix4fv(locTexMatrix, 1, false, cameraMatrix, 0)
-
+            Matrix.rotateM(tempMatrix, 0, -displayRotation + 0f, 0f, 0f, 1f)
+            GLES31.glUniformMatrix4fv(locTexMatrix, 1, false, tempMatrix, 0)
             // mvp
-            calculateMvp(rotation, width, height, surfaceWidth, surfaceHeight, cameraMatrix)
-            GLES31.glUniformMatrix4fv(locMvpMatrix, 1, false, cameraMatrix, 0)
+            calculateMvp(rotation, width, height, surfaceWidth, surfaceHeight, tempMatrix)
+            GLES31.glUniformMatrix4fv(locMvpMatrix, 1, false, tempMatrix, 0)
         } else {
             GLES31.glUniformMatrix4fv(locTexMatrix, 1, false, cameraMatrix, 0)
             calculateMvp(rotation, width, height, surfaceWidth, surfaceHeight, tempMatrix)

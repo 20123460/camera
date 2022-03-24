@@ -1,2 +1,3 @@
 # facially
-something facially for android, such as landmark, fbx model
+model from
+https://github.com/zoonewbie/vividFacesAnimojiAndroid.git
